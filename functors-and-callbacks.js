@@ -151,9 +151,9 @@ function ScenarioWrapper(f, wait, ...argsF) {
  * Functor must accept the following: ([...argsF], [...arguments]) on first iteration, and spread of second elem from its own return on the following iterations
  * Predicate must accept [] on first check, and the first elem from the return of functor on the following checks
  * @kind class
- * @params {functor} functor a functor to be executed repeatedly
- * @params {predicate} predicate a predicate to check whether to continue cycling
- * @params {...Object} argsF any preset arguments for functor
+ * @param {functor} functor a functor to be executed repeatedly
+ * @param {predicate} predicate a predicate to check whether to continue cycling
+ * @param {...Object} argsF any preset arguments for functor
  * @returns {function} function so Wrapper can be used as functor itself
  */
 function CyclicWrapper(functor, waitF, predicate, waitP, ...argsF) {
@@ -166,7 +166,7 @@ function CyclicWrapper(functor, waitF, predicate, waitP, ...argsF) {
 
 	/**
 	 * Applies functor as long as predicate returns true
-	 * @params {...Object} arguments any additional arguments for functor
+	 * @param {...Object} arguments any additional arguments for functor
 	 * @returns {Object} a pair which is returned from last execution of functor
 	 */
 	ret.apply = function() {
