@@ -119,7 +119,9 @@ function ScenarioWrapper(f, wait, ...argsF) {
     /**
      * Sets selection map.
      *
-     * @param {Map} links_map selection map. The value (functor) from map to execute is got by key --- main result (as return or in callback) of root functor
+     * @param {Map} links_map
+     * * Selection map.
+     * * The value (functor) from map to execute is got by key --- main result (as return or in callback) of root functor
      *
      * Functors which are values of this map must match this scheme:
      * * @param {...Object} args spread of any result (as return or passed in callback) from root functor that comes in pair with key
@@ -179,7 +181,8 @@ function ScenarioWrapper(f, wait, ...argsF) {
     };
 
     /**
-     * Applies first functor and the one which executes from the first functor's result. Works the same as function returned from constructor.
+     * Applies first functor and the one which is mapped from the first functor's result.
+     * Works the same as function returned from constructor.
      *
      * @param {...Object} arguments launch arguments
      *
@@ -217,7 +220,8 @@ function ScenarioWrapper(f, wait, ...argsF) {
  * If functor has a callback, it must match this scheme:
  * * @param {Array} toFunctor (on first iteration --- argsF + .apply() arguments)
  * * @param {function} predicate_clb predicate based on predicate from this Wrapper
- * Note: it must pass arguments for future iterations (toPredicate, toFunctor) to the predicate_clb in given order as arrays as 2 arguments on finish of callback execution
+ * Note: it must pass arguments for future iterations (toPredicate, toFunctor)
+ * * to the predicate_clb in given order as arrays as 2 arguments on finish of callback execution
  *
  *
  * @param {Object} predicateInfo consists of the following (anything except p can be omit):
@@ -231,7 +235,8 @@ function ScenarioWrapper(f, wait, ...argsF) {
  *
  * If predicate has a callback, it must match this scheme:
  * * @param {Array} toPredicate (on first iteration --- argsP)
- * * @param {function} functor_clb functor with no arguments based on functor from this Wrapper. Call it on finish of callback execution, if iteration continues
+ * * @param {function} functor_clb functor with no arguments based on functor from this Wrapper.
+ * * * Call functor_clb on finish of callback execution, if iteration continues
  *
  *
  * @returns {function} function so Wrapper can be used as functor itself
@@ -264,7 +269,8 @@ function CyclicWrapper(functorInfo, predicateInfo) {
      * If new functor has a callback, it must match this scheme:
      * * @param {Array} toFunctor (on first iteration --- new_argsF + .apply() arguments)
      * * @param {function} predicate_clb predicate based on predicate from this Wrapper
-     * Note: it must pass arguments for future iterations (toPredicate, toFunctor) to the predicate_clb in given order as arrays as 2 arguments on finish of callback execution
+     * Note: it must pass arguments for future iterations (toPredicate, toFunctor)
+     * * to the predicate_clb in given order as arrays as 2 arguments on finish of callback execution
      *
      * @returns {CyclicWrapper} this Wrapper
      */
@@ -286,7 +292,8 @@ function CyclicWrapper(functorInfo, predicateInfo) {
      *
      * If new predicate has a callback, it must match this scheme:
      * * @param {Array} toPredicate (on first iteration --- new_argsP, result from functor on following iterations)
-     * * @param {function} functor_clb functor with no arguments based on functor from this Wrapper. Call it on finish of callback execution, if iteration continues
+     * * @param {function} functor_clb functor with no arguments based on functor from this Wrapper.
+     * * * Call functor_clb on finish of callback execution, if iteration continues
      *
      * @returns {CyclicWrapper} this Wrapper
      */
