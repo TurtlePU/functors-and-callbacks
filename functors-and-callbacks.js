@@ -88,7 +88,7 @@ function LinearWrapper(f, waitF, ...argsF) {
 };
 
 /**
- * Wrapper for "Scenario" operations (switcher). Selects the next functor depending on result from root functor.
+ * Wrapper for "Switcher" operations. Selects the next functor depending on result from root functor.
  *
  * @kind class
  *
@@ -108,9 +108,9 @@ function LinearWrapper(f, waitF, ...argsF) {
  *
  * @returns {function} so Wrapper object can be used as functor itself
  */
-function ScenarioWrapper(f, wait, ...argsF) {
+function SwitcherWrapper(f, wait, ...argsF) {
 
-    var ret = function ScenarioWrapper() {
+    var ret = function SwitcherWrapper() {
         return ret.apply(...arguments);
     };
 
