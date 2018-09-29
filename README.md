@@ -82,15 +82,19 @@ Whoa, wait. What is ```next```? Where does the first operation take its ```time`
 Hold on, there are the answers. But we'll begin from the end.
 
 1. ```.apply()``` arguments
+
    All of them are passed to the first operation right after its preset arguments (```argsF```, remember?). So this weird ```1000``` is interpreted as ```time``` in first operation.
 
 2. ```.andThen()``` multiple arguments
+
    During writing this lib, I tried to use spread operator as much as I could to make the code using this lib as readable as possible. So, as you can guess, all arguments of ```.andThen()``` after ```wait``` are collected and interpreted as ```...argsF```. So, ```'Vader'``` and ```'I love cookies'``` will be ```author``` and ```message```.
 
 3. Callback function as an operation
+
    If you want a callback function in your Wrapper queue, it must match only one additional requirement &mdash; it must accept the next operation in queue as its last argument. So, in this case, the second operation will be passed to the first as ```next```.
 
 4. Return from the operations
+
    Huh, that's easy. If operation returns anything and does not have a callback, anything it returns will be passed to the next operation right after any preset arguments. In this case, ```"Why do I have to return anything?"``` will be the ```argument``` of the last operation.
 
 Not that hard, I hope.
