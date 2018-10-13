@@ -114,13 +114,13 @@ function SwitcherWrapper(f, wait, ...argsF) {
         return ret.apply(...arguments);
     };
 
-    var links = new Map();
+    var options = new Map();
 
     /**
-     * Sets selection map.
+     * Sets option map.
      *
-     * @param {Map} links_map
-     * * Selection map.
+     * @param {Map} option_map
+     * * Option map.
      * * The value (functor) from map to execute is got by key --- main result (as return or in callback) of root functor
      *
      * Functors which are values of this map must match this scheme:
@@ -129,16 +129,16 @@ function SwitcherWrapper(f, wait, ...argsF) {
      *
      * @returns {ScenarioWrapper} this Wrapper
      */
-    ret.setLinks = function(links_map) {
-        links = new Map(links_map);
+    ret.setOptions = function(option_map) {
+        options = new Map(option_map);
         return ret;
     };
 
     /**
-     * Drops selection map.
+     * Drops option map.
      */
-    ret.dropLinks = function() {
-        links = new Map();
+    ret.dropOptions = function() {
+        options = new Map();
     };
 
     /**
@@ -153,8 +153,8 @@ function SwitcherWrapper(f, wait, ...argsF) {
      *
      * @returns {ScenarioWrapper} this Wrapper
      */
-    ret.addLink = function(key, functor) {
-        links.set(key, functor);
+    ret.addOption = function(key, functor) {
+        options.set(key, functor);
         return ret;
     };
 
@@ -165,8 +165,8 @@ function SwitcherWrapper(f, wait, ...argsF) {
      *
      * @returns {function} option functor
      */
-    ret.getLink = function(key) {
-        return links.get(key);
+    ret.getOption = function(key) {
+        return options.get(key);
     };
 
     /**
@@ -176,8 +176,8 @@ function SwitcherWrapper(f, wait, ...argsF) {
      *
      * @returns {Boolean} true if deletion occured, false otherwise
      */
-    ret.removeLink = function(key) {
-        return links.delete(key);
+    ret.removeOption = function(key) {
+        return options.delete(key);
     };
 
     /**
@@ -208,6 +208,21 @@ function SwitcherWrapper(f, wait, ...argsF) {
  * @kind class
  *
  *
+ * @param {Object} predicateInfo consists of the following (anything except p can be omit):
+ * * @param {function} p a predicate. Must return true if continue cycle, false otherwise
+ * * @param {Boolean} waitP true if predicate has a callback, false otherwise
+ * * @param {Array} argsP preset arguments for the first call of predicate
+ *
+ * If predicate doesn't have a callback, it must match this scheme:
+ * * @param {...Object} toPredicate (on first iteration --- argsP)
+ * * @returns {Boolean} true if keep iterating, false otherwise
+ *
+ * If predicate has a callback, it must match this scheme:
+ * * @param {Array} toPredicate (on first iteration --- argsP)
+ * * @param {function} functor_clb functor with no arguments based on functor from this Wrapper.
+ * * * Call functor_clb on finish of callback execution, if iteration continues
+ *
+ *
  * @param {Object} functorInfo consists of the following (anything except f can be omit):
  * * @param {function} f a functor to be called repeatedly
  * * @param {Boolean} waitF true if functor has a callback, false otherwise
@@ -224,35 +239,43 @@ function SwitcherWrapper(f, wait, ...argsF) {
  * * to the predicate_clb in given order as arrays as 2 arguments on finish of callback execution
  *
  *
- * @param {Object} predicateInfo consists of the following (anything except p can be omit):
- * * @param {function} p a predicate. Must return true if continue cycle, false otherwise
- * * @param {Boolean} waitP true if predicate has a callback, false otherwise
- * * @param {Array} argsP preset arguments for the first call of predicate
- *
- * If predicate doesn't have a callback, it must match this scheme:
- * * @param {...Object} toPredicate (on first iteration --- argsP)
- * * @returns {Boolean} true if keep iterating, false otherwise
- *
- * If predicate has a callback, it must match this scheme:
- * * @param {Array} toPredicate (on first iteration --- argsP)
- * * @param {function} functor_clb functor with no arguments based on functor from this Wrapper.
- * * * Call functor_clb on finish of callback execution, if iteration continues
- *
- *
  * @returns {function} function so Wrapper can be used as functor itself
  */
-function CyclicWrapper(functorInfo, predicateInfo) {
-
-    var f     = functorInfo.f,
-        waitF = functorInfo.waitF || false,
-        argsF = functorInfo.argsF || [];
+function CyclicWrapper(predicateInfo, functorInfo) {
 
     var p     = predicateInfo.p,
         waitP = predicateInfo.waitP || false,
         argsP = predicateInfo.argsP || [];
 
+    var f     = functorInfo.f,
+        waitF = functorInfo.waitF || false,
+        argsF = functorInfo.argsF || [];
+
     var ret = function CyclicWrapper() {
         return ret.apply(...arguments);
+    };
+
+    /**
+     * Sets new predicate.
+     *
+     * @param {function} new_p new predicate
+     * @param {Boolean} new_waitP true if new predicate has a callback, false otherwise
+     * @param {...Object} new_argsP preset arguments for the first call of new predicate
+     *
+     * If new predicate doesn't have a callback, it must match this scheme:
+     * * @param {...Object} toPredicate (on first iteration --- new_argsP, result from functor on following iterations)
+     * * @returns {Boolean} true if keep iterating, false otherwise
+     *
+     * If new predicate has a callback, it must match this scheme:
+     * * @param {Array} toPredicate (on first iteration --- new_argsP, result from functor on following iterations)
+     * * @param {function} functor_clb functor with no arguments based on functor from this Wrapper.
+     * * * Call functor_clb on finish of callback execution, if iteration continues
+     *
+     * @returns {CyclicWrapper} this Wrapper
+     */
+    ret.setPredicate = function(new_p, new_waitP, ...new_argsP) {
+        { p, waitP, argsP } = { new_p, new_waitP, new_argsP };
+        return ret;
     };
 
     /**
@@ -276,29 +299,6 @@ function CyclicWrapper(functorInfo, predicateInfo) {
      */
     ret.setFunctor = function(new_f, new_waitF, ...new_argsF) {
         { f, waitF, argsF } = { new_f, new_waitF, new_argsF };
-        return ret;
-    };
-
-    /**
-     * Sets new predicate.
-     *
-     * @param {function} new_p new predicate
-     * @param {Boolean} new_waitP true if new predicate has a callback, false otherwise
-     * @param {...Object} new_argsP preset arguments for the first call of new predicate
-     *
-     * If new predicate doesn't have a callback, it must match this scheme:
-     * * @param {...Object} toPredicate (on first iteration --- new_argsP, result from functor on following iterations)
-     * * @returns {Boolean} true if keep iterating, false otherwise
-     *
-     * If new predicate has a callback, it must match this scheme:
-     * * @param {Array} toPredicate (on first iteration --- new_argsP, result from functor on following iterations)
-     * * @param {function} functor_clb functor with no arguments based on functor from this Wrapper.
-     * * * Call functor_clb on finish of callback execution, if iteration continues
-     *
-     * @returns {CyclicWrapper} this Wrapper
-     */
-    ret.setPredicate = function(new_p, new_waitP, ...new_argsF) {
-        { p, waitP, argsP } = { new_p, new_waitP, new_argsP };
         return ret;
     };
 
