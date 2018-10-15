@@ -346,9 +346,24 @@ function CyclicWrapper(predicateInfo, functorInfo) {
     return ret;
 };
 
+function collectAsync(...asyncTasks) {
+    return (next) => {
+        let tasksCount = 0;
+        let resultsCollected = [];
+        asyncTasks.forEach((task) => task((...results) => {
+            resultsCollected += results;
+            if (++tasksCount == asyncTasks.size())
+                next(...resultsCollected);
+        }));
+        if (asyncTasks.size() == 0)
+            next();
+    };
+};
+
 if (module)
     module.exports = {
         LinearWrapper: LinearWrapper,
         ScenarioWrapper: ScenarioWrapper,
-        CyclicWrapper: CyclicWrapper
+        CyclicWrapper: CyclicWrapper,
+        collectAsync: collectAsync
     };
