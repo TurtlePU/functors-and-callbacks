@@ -1,6 +1,7 @@
 # Functors and Callbacks
 
-This is a js lib for building asynchronous pipelines / full algorithms
+This is a js lib for building asynchronous pipelines / full algorithms.
+
 Without callback hell, of course.
 
 There are three main classes:
