@@ -307,7 +307,7 @@ function CyclicWrapper(predicateInfo, functorInfo) {
      *
      * @param {...Object} arguments launch arguments for functor
      *
-     * @returns {Object} a pair which is returned from last execution of functor or null if at least one of functions have callbacks
+     * @returns {Object} an object which is returned from last execution of functor or null if at least one of functions have callbacks
      */
     ret.apply = function() {
         if (!waitF && !waitP) {
