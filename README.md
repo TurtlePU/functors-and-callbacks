@@ -135,7 +135,7 @@ switcher.setOptions(new Map([
 
 switcher.addOption(
     "light side of Force",
-    () => { console.log("Wait. Do they also have cookies?"); }
+    () => console.log("Wait. Do they also have cookies?")
 );  // adds another option, if there were none by this key before. Else overwrites the entry.
 
 switcher.removeOption("dark side of Force");  // aww, my cookies are gone!
@@ -192,14 +192,14 @@ If no options are available or root is callback, ```.apply()``` returns the retu
 
 ## Cyclic
 
-Construction looks like that:
+Construction looks like this:
 
 ```javascript
 let cycleOfLife = new CyclicWrapper(
     {
         p: function writeDocs_notif(docsReady) { return !docsReady; },
-        waitP: false,  // redundant
-        argsP: []  // redundant
+        waitP: false,  // redundant here
+        argsP: []  // redundant here
     },
     {
         f: function writeDocs(linesWritten, linesNeeded) {
@@ -208,8 +208,8 @@ let cycleOfLife = new CyclicWrapper(
                 toFunctor: [linesWritten + 1, linesNeeded]
             };
         },
-        waitF: false,  // redundant
-        argsF: []  // redundant
+        waitF: false,  // redundant here
+        argsF: []  // redundant here
     }
 );
 ```
@@ -224,4 +224,45 @@ cycleOfLife(0, INF);  // any arguments of .apply() will be passed to the first c
 
 Format of callback / non-callback predicate / functor:
 
-Later. If you need them right now, check docs in .js file itself
+```javascript
+let non_clb_predicate = (toPredicate_1, toPredicate_2, ..., toPredicate_n) => {  // on first iteration --- ...argsP
+    // do some stuff
+    if (keep_going)
+        return true;
+    else
+        return false;
+}
+
+let clb_predicate = (toPredicate : Array, functor : function) => {
+    // do some stuff
+
+    // somewhere in a callback
+    if (keep_going)
+        functor();
+}
+
+let non_clb_functor = (toFunctor_1, toFunctor_2, ..., toFunctor_n) {  // on first iteration --- ...(argsF + .apply() arguments)
+    // do some stuff
+    return {
+        // maybe some other fields
+        toPredicate : [...]  // next predicate call arguments
+        toFunctor : [...]    // same for functor
+    }
+}
+
+let clb_functor = (toFunctor : Array, predicate_clb : function) => {
+    // do some stuff
+
+    // somewhere in a callback
+    predicate_clb(
+        [...],  // arguments for next predicate call
+        [...]   // same for functor
+    )
+}
+```
+
+Yeah, I know, the arguments and returns of functions doesn't match. Don't worry: it works.
+
+## Conclusion
+
+Well, I think, that's it for now. New tools for async are cometh!
