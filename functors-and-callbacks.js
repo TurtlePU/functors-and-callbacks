@@ -1,4 +1,13 @@
-function LinearObject(f, wait, ...argsF) {
+function __fill_with_default(info) {
+    return {
+        f    : info.f,
+        wait : info.wait !== false,
+        args : info.args || []
+    };
+};
+
+function LinearObject(functorInfo) {
+    const { f, wait, args } = __fill_with_default(functorInfo);
 
     var ret = function LinearObject() {
         return ret.apply(...arguments);
@@ -6,8 +15,8 @@ function LinearObject(f, wait, ...argsF) {
 
     var next;
 
-    ret.setNext = function(g, w, ...argsG) {
-        return next = new LinearObject(g, w, ...argsG);
+    ret.setNext = function(gunctorInfo) {
+        return next = new LinearObject(__fill_with_default(gunctorInfo));
     };
 
     ret.apply = function() {
@@ -26,52 +35,54 @@ function LinearObject(f, wait, ...argsF) {
  *
  * @kind class
  *
- * @param {function} f first functor in queue
- * @param {Boolean} waitF true if functor f contains a callback, false otherwise
- * @param {...Object} argsF preset params for the functor f
+ * @param {Object} functorInfo consists of the following:
+ * * @param {function} f first functor in queue
+ * * @param {Boolean} wait true if functor f contains a callback, false otherwise (defaults to true)
+ * * @param {Array} args preset params for the functor f (defaults to [])
  *
  * If first functor doesn't have a callback, it must match this scheme:
- * * @param {...Object} argsF
+ * * @param {...Object} args
  * * @param {...Object} arguments .apply() arguments
  * * @returns {Object} will be given to the next functor as tail argument
  *
  * If first functor has a callback, it must match this scheme:
- * * @param {...Object} argsF
+ * * @param {...Object} args
  * * @param {...Object} arguments .apply() arguments
  * * @param {function} next functor
  *
  * @returns {function} so Wrapper object can be used as functor itself
  */
-function LinearWrapper(f, waitF, ...argsF) {
+function LinearWrapper(functorInfo) {
 
     var ret = function LinearWrapper() {
         return ret.apply(...arguments);
     };
 
-    const first = new LinearObject(f, waitF, ...argsF);
-      var last  = first;
+    const first = new LinearObject(functorInfo);
+    var   last  = first;
 
     /**
      * Method to queue functors.
      *
-     * @param {function} g next functor in queue
-     * @param {Boolean} waitG true if functor g contains a callback, false otherwise
-     * @param {...Object} argsG preset params for the functor g
+     * @param {Object} functorInfo consists of the following:
+     * * @param {function} f next functor in queue
+     * * @param {Boolean} wait true if functor f contains a callback, false otherwise (defaults to true)
+     * * @param {Array} args preset params for the functor f (defaults to [])
      *
      * If added functor doesn't have a callback, it must match this scheme:
-     * * @param {...Object} argsF
+     * * @param {...Object} args
      * * @param {Object} tail any result from previous functor (passed in callback or returned from non-callback)
      * * @returns {Object} will be given to the next functor as tail argument
      *
      * If first functor has a callback, it must match this scheme:
-     * * @param {...Object} argsF
+     * * @param {...Object} args
      * * @param {Object} tail any result from previous functor (passed in callback or returned from non-callback)
      * * @param {function} next functor
      *
      * @returns {LinearWrapper} this Wrapper
      */
-    ret.andThen = function(g, waitG, ...argsG) {
-        last = last.setNext(g, waitG, ...argsG);
+    ret.andThen = function(functorInfo) {
+        last = last.setNext(functorInfo);
         return ret;
     };
 
@@ -92,9 +103,10 @@ function LinearWrapper(f, waitF, ...argsF) {
  *
  * @kind class
  *
- * @param {function} f root functor
- * @param {Boolean} wait tells whether functor f contains a callback
- * @param {...Object} argsF preset params for the functor f
+ * @param {Object} switcherInfo consists of the following:
+ * * @param {function} f switcher function itself
+ * * @param {Boolean} wait tells whether switcher f contains a callback (defaults to true)
+ * * @param {Array} args preset params for the switcher f (defaults to [])
  *
  * If first functor doesn't have a callback, it must match this scheme:
  * * @param {...Object} argsF
@@ -108,7 +120,8 @@ function LinearWrapper(f, waitF, ...argsF) {
  *
  * @returns {function} so Wrapper object can be used as functor itself
  */
-function SwitcherWrapper(f, wait, ...argsF) {
+function SwitcherWrapper(switcherInfo) {
+        const { f, wait, args } = __fill_with_default(switcherInfo);
 
     var ret = function SwitcherWrapper() {
         return ret.apply(...arguments);
@@ -189,13 +202,14 @@ function SwitcherWrapper(f, wait, ...argsF) {
      * @returns {Object} a return from the first executed functor with callback (or last if none has callback)
      */
     ret.apply = function() {
-        if (links.size == 0)
-            return f(...argsF, ...arguments);
-        if (!wait) {
-            let res = f(...argsF, ...arguments);
+        if (links.size == 0) {
+            return f(...args, ...arguments);
+        } else if (!wait) {
+            let res = f(...args, ...arguments);
             return links.get(res.key)(...res.args);
+        } else {
+            return f(...args, ...arguments, links);
         }
-        return f(...argsF, ...arguments, links);
     };
 
     return ret;
@@ -208,48 +222,43 @@ function SwitcherWrapper(f, wait, ...argsF) {
  * @kind class
  *
  *
- * @param {Object} predicateInfo consists of the following (anything except p can be omit):
- * * @param {function} p a predicate. Must return true if continue cycle, false otherwise
- * * @param {Boolean} waitP true if predicate has a callback, false otherwise
- * * @param {Array} argsP preset arguments for the first call of predicate
+ * @param {Object} predicateInfo consists of the following (anything except f can be omit):
+ * * @param {function} f a predicate. Must return true if continue cycle, false otherwise
+ * * @param {Boolean} wait true if predicate has a callback, false otherwise (defaults to true)
+ * * @param {Array} args preset arguments for the first call of predicate (defaults to [])
  *
  * If predicate doesn't have a callback, it must match this scheme:
- * * @param {...Object} toPredicate (on first iteration --- argsP)
+ * * @param {...Object} toPredicate (on first iteration --- ...predicateInfo.args)
  * * @returns {Boolean} true if keep iterating, false otherwise
  *
  * If predicate has a callback, it must match this scheme:
- * * @param {Array} toPredicate (on first iteration --- argsP)
- * * @param {function} functor_clb functor with no arguments based on functor from this Wrapper.
- * * * Call functor_clb on finish of callback execution, if iteration continues
+ * * @param {Array} toPredicate (on first iteration --- ...predicateInfo.args)
+ * * @param {function} functorF functor with no arguments based on functor from this Wrapper.
+ * * * Call functorF on finish of callback execution, if iteration continues
  *
  *
  * @param {Object} functorInfo consists of the following (anything except f can be omit):
  * * @param {function} f a functor to be called repeatedly
- * * @param {Boolean} waitF true if functor has a callback, false otherwise
- * * @param {Array} argsF preset arguments for the first call of functor
+ * * @param {Boolean} wait true if functor has a callback, false otherwise (defaults to true)
+ * * @param {Array} args preset arguments for the first call of functor (defaults to [])
  *
  * If functor doesn't have a callback, it must match this scheme:
- * * @param {...Object} toFunctor (on first iteration --- argsF + .apply() arguments)
+ * * @param {...Object} toFunctor (on first iteration --- ...functorInfo.args + .apply() arguments)
  * * @returns {Object} { toPredicate: Array, toFunctor: Array } those are the arguments for future iterations
  *
  * If functor has a callback, it must match this scheme:
- * * @param {Array} toFunctor (on first iteration --- argsF + .apply() arguments)
- * * @param {function} predicate_clb predicate based on predicate from this Wrapper
+ * * @param {Array} toFunctor (on first iteration --- ...functorInfo.args + .apply() arguments)
+ * * @param {function} predicateP predicate based on predicate from this Wrapper
  * Note: it must pass arguments for future iterations (toPredicate, toFunctor)
- * * to the predicate_clb in given order as arrays as 2 arguments on finish of callback execution
+ * * to the predicateP in given order as arrays as 2 arguments on finish of callback execution
  *
  *
  * @returns {function} function so Wrapper can be used as functor itself
  */
 function CyclicWrapper(predicateInfo, functorInfo) {
 
-    var p     = predicateInfo.p,
-        waitP = predicateInfo.waitP || false,
-        argsP = predicateInfo.argsP || [];
-
-    var f     = functorInfo.f,
-        waitF = functorInfo.waitF || false,
-        argsF = functorInfo.argsF || [];
+    var { p, waitP, argsP } = __fill_with_default(predicateInfo);
+    var { f, waitF, argsF } = __fill_with_default(  functorInfo);
 
     var ret = function CyclicWrapper() {
         return ret.apply(...arguments);
@@ -258,47 +267,49 @@ function CyclicWrapper(predicateInfo, functorInfo) {
     /**
      * Sets new predicate.
      *
-     * @param {function} new_p new predicate
-     * @param {Boolean} new_waitP true if new predicate has a callback, false otherwise
-     * @param {...Object} new_argsP preset arguments for the first call of new predicate
+     * @param {Object} predicateInfo consists of the following:
+     * @param {function} f new predicate
+     * @param {Boolean} wait true if new predicate has a callback, false otherwise (defaults to true)
+     * @param {Array} args preset arguments for the first call of new predicate (defaults to [])
      *
      * If new predicate doesn't have a callback, it must match this scheme:
-     * * @param {...Object} toPredicate (on first iteration --- new_argsP, result from functor on following iterations)
+     * * @param {...Object} toPredicate (on first iteration --- new args, result from functor on following iterations)
      * * @returns {Boolean} true if keep iterating, false otherwise
      *
      * If new predicate has a callback, it must match this scheme:
-     * * @param {Array} toPredicate (on first iteration --- new_argsP, result from functor on following iterations)
-     * * @param {function} functor_clb functor with no arguments based on functor from this Wrapper.
-     * * * Call functor_clb on finish of callback execution, if iteration continues
+     * * @param {Array} toPredicate (on first iteration --- new args, result from functor on following iterations)
+     * * @param {function} functorF functor with no arguments based on functor from this Wrapper.
+     * * * Call functorF on finish of callback execution, if iteration continues
      *
      * @returns {CyclicWrapper} this Wrapper
      */
-    ret.setPredicate = function(new_p, new_waitP, ...new_argsP) {
-        { p, waitP, argsP } = { new_p, new_waitP, new_argsP };
+    ret.setPredicate = function(predicateInfo) {
+        { p, waitP, argsP } = __fill_with_default(predicateInfo);
         return ret;
     };
 
     /**
      * Sets new functor.
      *
-     * @param {function} new_f new functor
-     * @param {Boolean} new_waitF true if new functor has a callback, false otherwise
-     * @param {...Object} new_argsF preset arguments for the first call of new functor
+     * @param {Object} functorInfo consists of the following:
+     * @param {function} f new functor
+     * @param {Boolean} wait true if new functor has a callback, false otherwise (defaults to true)
+     * @param {Array} args preset arguments for the first call of new functor (defaults to [])
      *
      * If new functor doesn't have a callback, it must match this scheme:
-     * * @param {...Object} toFunctor (on first iteration --- new_argsF + .apply() arguments)
+     * * @param {...Object} toFunctor (on first iteration --- new args + .apply() arguments)
      * * @returns {Object} { toPredicate: Array, toFunctor: Array } those are the arguments for future iterations
      *
      * If new functor has a callback, it must match this scheme:
-     * * @param {Array} toFunctor (on first iteration --- new_argsF + .apply() arguments)
-     * * @param {function} predicate_clb predicate based on predicate from this Wrapper
+     * * @param {Array} toFunctor (on first iteration --- new args + .apply() arguments)
+     * * @param {function} predicateP predicate based on predicate from this Wrapper
      * Note: it must pass arguments for future iterations (toPredicate, toFunctor)
-     * * to the predicate_clb in given order as arrays as 2 arguments on finish of callback execution
+     * * to the predicateP in given order as arrays as 2 arguments on finish of callback execution
      *
      * @returns {CyclicWrapper} this Wrapper
      */
-    ret.setFunctor = function(new_f, new_waitF, ...new_argsF) {
-        { f, waitF, argsF } = { new_f, new_waitF, new_argsF };
+    ret.setFunctor = function(functorInfo) {
+        { f, waitF, argsF } = __fill_with_default(functorInfo);
         return ret;
     };
 
@@ -346,16 +357,27 @@ function CyclicWrapper(predicateInfo, functorInfo) {
     return ret;
 };
 
-function collectAsync(...asyncTasks) {
+/**
+ * Collector of callback operations
+ *
+ * @kind function
+ *
+ * @param {...Object} callbacks callback operations to be collected
+ *
+ * Note: callbacks must accept only one argument which is a function that should be called on finish of each callback
+ *
+ * @returns callback function with only one parameter --- next function to execute after the completion of all callbacks
+ */
+function collectCallbacks(...callbacks) {
     return (next) => {
         let tasksCount = 0;
         let resultsCollected = [];
-        asyncTasks.forEach((task) => task((...results) => {
+        callbacks.forEach((task) => task((...results) => {
             resultsCollected += results;
-            if (++tasksCount == asyncTasks.size())
+            if (++tasksCount == callbacks.size())
                 next(...resultsCollected);
         }));
-        if (asyncTasks.size() == 0)
+        if (callbacks.size() == 0)
             next();
     };
 };
@@ -365,5 +387,5 @@ if (module)
         LinearWrapper: LinearWrapper,
         ScenarioWrapper: ScenarioWrapper,
         CyclicWrapper: CyclicWrapper,
-        collectAsync: collectAsync
+        collectCallbacks: collectCallbacks
     };
