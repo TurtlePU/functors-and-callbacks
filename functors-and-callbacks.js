@@ -15,8 +15,11 @@ function LinearObject(functorInfo) {
 
     var next;
 
-    ret.setNext = function(gunctorInfo) {
-        return next = new LinearObject(__fill_with_default(gunctorInfo));
+    ret.getNext = function() { return next; }
+    ret.getInfo = function() { return { f : f, wait : wait, args : args }; }
+
+    ret.setNext = function(nextObject) {
+        return next = nextObject;
     };
 
     ret.apply = function() {
@@ -62,7 +65,9 @@ function LinearWrapper(functorInfo) {
     var   last  = first;
 
     /**
-     * Method to queue functors.
+     * Puts new functor in queue.
+     * Note: this function makes source queue longer.
+     * * To make copy of queue and make copy longer, use .andThenNoAssign()
      *
      * @param {Object} functorInfo consists of the following:
      * * @param {function} f next functor in queue
@@ -81,9 +86,41 @@ function LinearWrapper(functorInfo) {
      *
      * @returns {LinearWrapper} this Wrapper
      */
-    ret.andThen = function(functorInfo) {
-        last = last.setNext(functorInfo);
+    ret.andThen = function(gunctorInfo) {
+        last = last.setNext(new LinearObject(gunctorInfo));
         return ret;
+    }
+
+    /**
+     * Puts new functor in queue.
+     * Note: this function doesn't make source queue longer. It copies it and queues next functor into a copy, then returns it.
+     * * To make source queue longer, use .andThen()
+     *
+     * @param {Object} functorInfo consists of the following:
+     * * @param {function} f next functor in queue
+     * * @param {Boolean} wait true if functor f contains a callback, false otherwise (defaults to true)
+     * * @param {Array} args preset params for the functor f (defaults to [])
+     *
+     * If added functor doesn't have a callback, it must match this scheme:
+     * * @param {...Object} args
+     * * @param {Object} tail any result from previous functor (passed in callback or returned from non-callback)
+     * * @returns {Object} will be given to the next functor as tail argument
+     *
+     * If first functor has a callback, it must match this scheme:
+     * * @param {...Object} args
+     * * @param {Object} tail any result from previous functor (passed in callback or returned from non-callback)
+     * * @param {function} next functor
+     *
+     * @returns {LinearWrapper} copy of this Wrapper with next functor
+     */
+    ret.andThenNoAssign = function(gunctorInfo) {
+        var result = new LinearWrapper(functorInfo);
+
+        let tmp = first;
+        while (tmp = tmp.getNext())
+            result.andThen(tmp.getInfo());
+
+        return result.andThen(gunctorInfo);
     };
 
     /**
